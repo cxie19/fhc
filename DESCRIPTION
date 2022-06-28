@@ -1,0 +1,24 @@
+Package: fhc
+Title: Fit Flexible-Hazards Cure Models
+Version: 0.0.0.9000
+Authors@R: c(
+    person("Can", "Xie", , "can.xie@uth.tmc.edu", role = c("aut", "cre"),
+           comment = c(ORCID = "0000-0002-4170-1247")),
+    person("Xuelin", "Huang", email = "xlhuang@mdanderson.org", role = "aut"),
+    person("Ruosha", "Li", email = "ruosha.li@uth.tmc.edu", role = "aut"))
+Description: A flexible-hazards cure model (non-mixture cure model) with the property of handling 
+    non-proportional hazards structure of one or more variables in a survival-
+	  cure data set can be esaily estimated by appling the function. Cure rates 
+	  and estimated survival curves can be obtained as well.
+License: GPL (>= 3)
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.2.0
+Depends: 
+    R (> 3.6.0)
+Imports: 
+    doParallel,
+    maxLik, 
+    survival, 
+    zoo
+LazyData: true

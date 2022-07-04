@@ -6,7 +6,7 @@
 #' @param event_status the name of event status in the data.
 #' @param id the name of patient id in the data.
 #' @param beta_variable the name(s) of variable(s) defined as long-term covariate(s) in the model, which cannot be NULL.
-#' @param gamma_variable the name(s) of variable(s) defined as short-term covariate(s) in the model.
+#' @param gamma_variable the name(s) of variable(s) defined as short-term covariate(s) in the model. By default gamma_variable = NULL.
 #' If there is no short-term covariate that needs to be defined, gamma should be set as NULL and the model becomes a proportional hazards cure model.
 #' @param coef a logical option for obtaining point estimates of regression parameters. By default coef = TRUE.
 #' @param se a logical option for obtaining standard errors of regression parameters. By default se = TRUE.
@@ -19,7 +19,7 @@
 #' @param absconverge.F0t the average of absolute differences for \eqn{F_0(t)} as the convergence criteria. The default is 1e-6.
 #' @param relconverge.F0t the average of relative differences for \eqn{F_0(t)} as the convergence criteria. The default is 1e-3.
 #'
-#' @return a list containing results of the fit. The following items para_coef, iter, lag_multi, and data are returned when the argument coef=TRUE.
+#' @return a list containing results of the fit. The following items para_coef, iter, and data are returned when the argument coef=TRUE.
 #' The item para_se is returned when the argument se=TRUE.
 #'     \item{para_coef}{estimated regression parameters (beta and gamma)}
 #'     \item{iter}{the number of iterations used to complete the point estimation}
@@ -29,14 +29,14 @@
 #'
 #' @examples data(fhc_dat)
 #' result <- fhcmodel(data=fhc_dat,event_status = "event",event_time="time",id="id",beta_variable = c("age","sex"),gamma_variable = c("age","sex"),se=F)
-#' result <- fhcmodel(data=fhc_dat,event_status = "event",event_time="time",id="id",beta_variable = c("age","sex"),gamma_variable = NULL,se=T)
+#' result <- fhcmodel(data=fhc_dat,event_status = "event",event_time="time",id="id",beta_variable = c("age","sex"),se=T)
 #' result$coef
 #' @import doParallel
 #' @importFrom maxLik maxNR
 #' @import survival
 #' @importFrom zoo na.locf
 
-fhcmodel <- function(data, event_time, event_status, id, beta_variable, gamma_variable, coef=T, se=T, max.int=200,
+fhcmodel <- function(data, event_time, event_status, id, beta_variable, gamma_variable=NULL, coef=T, se=T, max.int=200,
                      se.pert=100, no_cores=7,
                      absconverge.par=1e-6, relconverge.par=1e-4, absconverge.F0t=1e-6, relconverge.F0t=1e-3){
 
@@ -49,7 +49,7 @@ fhcmodel <- function(data, event_time, event_status, id, beta_variable, gamma_va
     cat("Point estimation starts.","\n")
 
     colnames(data)[colnames(data)==event_status] <- "event"
-    colnames(data)[colnames(data)==event_time] <- "T_event"
+    colnames(data)[colnames(data)==event_time] <- "T_new"
 
     Z_var <- beta_variable
     if (!is.null(gamma_variable)){
@@ -59,16 +59,23 @@ fhcmodel <- function(data, event_time, event_status, id, beta_variable, gamma_va
     }
 
     ### Functions for estimation
-    #### Step 2: Update gamma and beta0 ###
+    #### Step 2: Update beta, gamma, and beta0 ###
     # Function 1
-    gamma_comp <- function(par,beta,beta0,lower,upper){
+    beta_gamma_comp <- function(par,beta0){
 
-      gamma_loglik <- function(gamma){
+      beta_gamma_loglik <- function(par){
+
+        beta <- par[1:length(beta_variable)]
+        if (!is.null(gamma_variable)){
+          gamma <- par[(length(beta_variable)+1):(length(beta_variable)+length(gamma_variable))]
+        } else{
+          gamma <- rep(0,length(X_var))
+        }
 
         data_temp <- as.matrix(data)
         Z_i <- data_temp[,Z_var]
         X_i <- data_temp[,X_var]
-        betaZ <- Z_i%*%beta
+        betaZ <- Z_i%*%as.matrix(beta,nrow=length(beta))
         gammaX <- X_i%*%as.matrix(gamma,nrow=length(gamma))
         pert_weight_i <- data_temp[,"p_weight"]
         event_i <- data_temp[,"event"]
@@ -80,103 +87,62 @@ fhcmodel <- function(data, event_time, event_status, id, beta_variable, gamma_va
         return(LL)
       }
 
-      if (!is.null(gamma_variable)){
-        if (length(gamma_variable)>1){
-          gamma_est <-optim(par=par,fn=gamma_loglik,method = "Nelder-Mead",control=list("fnscale"=-1,maxit=20000), hessian=F)
+      beta_gamma_est <-optim(par=par,fn=beta_gamma_loglik,method = "Nelder-Mead",control=list("fnscale"=-1,maxit=10000), hessian=F)
 
+      if (beta_gamma_est$convergence==0){
+        beta_gamma_k <- beta_gamma_est$par
+        beta <- beta_gamma_k[1:length(beta_variable)]
+        if (!is.null(gamma_variable)){
+          gamma <- beta_gamma_k[(length(beta_variable)+1):(length(beta_variable)+length(gamma_variable))]
         } else {
-          gamma_est <-optim(par=par,fn=gamma_loglik,lower=lower,upper=upper,method = "Brent",control=list("fnscale"=-1), hessian=F)
-        }
-
-        if (gamma_est$convergence==0){
-          gamma_k <- gamma_est$par
-        }else {
-
-          if(pert==F){
-            stop(paste("gamma does not converge at iteration",iteration))
-          }else if(pert==T){
-            gamma_k <- "gamma does not converge"
-          }
-
+          gamma <- rep(0,length(Z_var))
         }
       } else{
-        gamma_k <- rep(0,length(X_var))
+        if(pert==F){
+          stop(paste("beta and gamma does not converge at iteration",iteration))
+        }else{
+          beta <- "beta does not converge"
+          gamma <- "gamma does not converge"
+        }
       }
 
-      return(gamma_k)
+      return(list(beta,gamma))
     }
 
     # Function 2
-    beta0_comp <- function(gamma,beta){
+    beta0_comp <- function(beta,gamma){
       pert_weight <- data$p_weight
       data_temp <- as.matrix(data)
       Z_i <- data_temp[,Z_var]
       X_i <- data_temp[,X_var]
-      betaZ <- Z_i%*%beta
+      betaZ <- Z_i%*%as.matrix(beta,nrow=length(beta))
       gammaX <- X_i%*%as.matrix(gamma,nrow=length(gamma))
       beta_0 <- log(pert_weight%*%data_temp[,"event"]/(t(pert_weight*exp(betaZ))%*%(data_temp[,"base_cdf"]^(exp(gammaX)))))
       return(as.vector(beta_0))
     }
 
-    ######################### Step 3. Update beta #########################
+    ######################### Step 3: Update F0(t) #########################
     # Function 3
-    cox_weighted <- function(ini_covari, gamma){
-
-      data_temp<- as.matrix(data)
-      # all the failure times
-      t <- data_temp[data_temp[,"event"]==1,"T_event"]
-
-      # for the patient fails at each time point with event
-      Z_i <- data_temp[data_temp[,"event"]==1,Z_var]
-      X_i <- data_temp[data_temp[,"event"]==1,X_var]
-      cdf0_i <- data_temp[data_temp[,"event"]==1,"base_cdf"]
-      f0_i <- data_temp[data_temp[,"event"]==1,"base_f"]
-      q_w_i <- data_temp[data_temp[,"event"]==1,"p_weight"]
-
-      # for patients who are at risk at each time point with event
-      Z_j <- lapply(t,function(x) data_temp[data_temp[,"T_event"]>=x,Z_var])
-      X_j <- lapply(t,function(x) data_temp[data_temp[,"T_event"]>=x,X_var])
-      q_w_j <- lapply(t,function(x) data_temp[data_temp[,"T_event"]>=x,"p_weight"])
-      gamma <- matrix(gamma,nrow=length(gamma))
-
-      wt1 <- exp(X_i%*%gamma)*(cdf0_i^(exp(X_i%*%gamma)-1))*f0_i
-      wt2 <- lapply(seq(t),function(x) exp(X_j[[x]]%*%gamma)*(cdf0_i[x]^(exp(X_j[[x]]%*%gamma)-1))*f0_i[x])
-      # log-partial likelihood
-      loglike <- function(beta){
-
-        LL <- sum(sapply(seq(t),function(x) q_w_i[x]*(Z_i[x,]%*%beta+log(wt1[x])-log(t(q_w_j[[x]]*exp(Z_j[[x]]%*%beta))%*%wt2[[x]]))))
-
-        return(LL)
-      }
-
-      result <- maxNR(fn=loglike,start=beta,finalHessian=FALSE)$estimate
-
-      return(result)
-
-    }
-
-    ######################### Step 4: Update F0(t) #########################
-    # A function to update baseline hazard function
-    # Function 4
     f_est <- function(gamma,beta,beta0){
 
-      t <- data$T_event[data$event==1]
+      t <- data$T_new[data$event==1]
 
       data_temp <- as.matrix(data)
       # for patients who are at risk
-      Z_i <- lapply(unique(t),function(x) data_temp[data_temp[,"T_event"]>=x,Z_var])
-      X_i <- lapply(unique(t),function(x) data_temp[data_temp[,"T_event"]>=x,X_var])
-      base_F_i <- lapply(unique(t), function(x) data_temp[data_temp[,"T_event"]>=x,"base_cdf"])
+      Z_i <- lapply(unique(t),function(x) data_temp[data_temp[,"T_new"]>=x,Z_var])
+      X_i <- lapply(unique(t),function(x) data_temp[data_temp[,"T_new"]>=x,X_var])
+      base_F_i <- lapply(unique(t), function(x) data_temp[data_temp[,"T_new"]>=x,"base_cdf"])
 
       # for patients who are at risk and fail in the future
-      X_i_failure <- lapply(unique(t),function(x) data_temp[data_temp[,"T_event"]>=x & data_temp[,"event"]==1,X_var])
-      base_F_i_failure <- lapply(unique(t), function(x) data_temp[data_temp[,"T_event"]>=x & data_temp[,"event"]==1,"base_cdf"])
+      X_i_failure <- lapply(unique(t),function(x) data_temp[data_temp[,"T_new"]>=x & data_temp[,"event"]==1,X_var])
+      base_F_i_failure <- lapply(unique(t), function(x) data_temp[data_temp[,"T_new"]>=x & data_temp[,"event"]==1,"base_cdf"])
 
       # weight
-      q_w_i <- sapply(unique(t),function(x) sum(data$p_weight[data$event==1&data$T_event==x])) # with event
-      q_w_j <- lapply(unique(t),function(x) data_temp[data_temp[,"T_event"]>=x,"p_weight"])# at risk
-      q_w_failure <- lapply(unique(t),function(x) data_temp[data_temp[,"T_event"]>=x & data_temp[,"event"]==1, "p_weight"])#at risk and fail in the future
+      q_w_i <- sapply(unique(t),function(x) sum(data$p_weight[data$event==1&data$T_new==x])) # with event
+      q_w_j <- lapply(unique(t),function(x) data_temp[data_temp[,"T_new"]>=x,"p_weight"])# at risk
+      q_w_failure <- lapply(unique(t),function(x) data_temp[data_temp[,"T_new"]>=x & data_temp[,"event"]==1, "p_weight"])#at risk and fail in the future
 
+      beta <- matrix(beta,nrow=length(beta))
       gamma <- matrix(gamma,nrow=length(gamma))
 
       # denominator
@@ -191,7 +157,7 @@ fhcmodel <- function(data, event_time, event_status, id, beta_variable, gamma_va
 
       alpha <- "error"
       times <- 2
-      while(alpha=="error" & times<=6){
+      while(alpha=="error" & times < 5){
         range_root <- lapply(seq(-10^times,10^times),function(x) c(x,(x+1)))
         alpha_result <- sapply(seq(range_root),function(i)tryCatch(uniroot(alpha_est,range_root[[i]],extendInt = "yes")$root,error=function(x) return("error")))
         alpha <- ifelse(sum(alpha_result=="error")<length(range_root),"root","error")
@@ -218,8 +184,8 @@ fhcmodel <- function(data, event_time, event_status, id, beta_variable, gamma_va
 
       new_base_f <- q_w_i/(deno+alpha)
       new_base_cdf <- cumsum(new_base_f)
-      event_base_f <- unlist(sapply(seq(length(unique(t))),function(x) rep(new_base_f[x],sum(data$T_event[data$event==1]==unique(t)[x]))))
-      event_base_cdf <- unlist(sapply(seq(length(unique(t))),function(x) rep(new_base_cdf[x],sum(data$T_event[data$event==1]==unique(t)[x]))))
+      event_base_f <- unlist(sapply(seq(length(unique(t))),function(x) rep(new_base_f[x],sum(data$T_new[data$event==1]==unique(t)[x]))))
+      event_base_cdf <- unlist(sapply(seq(length(unique(t))),function(x) rep(new_base_cdf[x],sum(data$T_new[data$event==1]==unique(t)[x]))))
 
       remove <- which(colnames(data)%in%c("base_cdf","base_f"))
       data <- data[,-remove]
@@ -237,21 +203,16 @@ fhcmodel <- function(data, event_time, event_status, id, beta_variable, gamma_va
         pos <- cen[cen<death[1]]
         data$base_cdf[pos] <- 0
       }
-      # check ending
-      if (sum(cen>death[length(death)])!=0){
-        pos <- cen[cen>death[length(death)]]
-        data$base_cdf[pos] <- base_cdf[length(base_cdf)]
-      }
       data$base_cdf <- na.locf(data$base_cdf)
 
-      return(list(new_base_cdf,data,alpha))
+      return(list(new_base_cdf,data))
     }
 
     ### Start estimation ###
     #### Step 1: find initial values ###
-    data <- data[order(data$T_event),]
-    t <- data$T_event[data$event==1]
-    formula.exp <- paste("Surv(T_event, event)", paste(beta_variable, collapse=" + "), sep=" ~ ")
+    data <- data[order(data$T_new),]
+    t <- data$T_new[data$event==1]
+    formula.exp <- paste("Surv(T_new, event)", paste(beta_variable, collapse=" + "), sep=" ~ ")
     initial <- coxph(as.formula(formula.exp), data = data, weights = p_weight, ties="breslow")
 
     H0 <- basehaz(initial, centered=FALSE) # considered ties using breslow estimator
@@ -259,7 +220,7 @@ fhcmodel <- function(data, event_time, event_status, id, beta_variable, gamma_va
 
     if (nrow(H0)!=length(unique(t))){
       compute.h.base <- function(k){
-        Z_j <- data[data$T_event>=t[k],beta_variable]
+        Z_j <- data[data$T_new>=t[k],beta_variable]
         h_base <- 1/sum(exp(t(initial$coefficients)%*%t(Z_j)))
         return(h_base)
       }
@@ -279,13 +240,13 @@ fhcmodel <- function(data, event_time, event_status, id, beta_variable, gamma_va
     base_cdf <- sapply(1:nrow(H0),function(x) H0$hazard[x]/H0$hazard[length(H0$hazard)])
     #initial values of baseline pdf
     base_f <- c(base_cdf[1],sapply(2:length(base_cdf), function(x) base_cdf[x]-base_cdf[x-1]))
-    base <- data.frame(T_event=H0$time,base_cdf=base_cdf,base_f=base_f)
+    base <- data.frame(T_new=H0$time,base_cdf=base_cdf,base_f=base_f)
 
     remove <- which(colnames(data)%in%c("base_cdf","base_f"))
     if (length(remove)!=0){
       data <- data[,-remove]
     }
-    data[data$event==1,c("base_cdf","base_f")] <- merge(data[data$event==1,],base,by="T_event")[,c("base_cdf","base_f")]
+    data[data$event==1,c("base_cdf","base_f")] <- merge(data[data$event==1,],base,by="T_new")[,c("base_cdf","base_f")]
     data$base_f[data$event==0] <- 0
 
     cen <- which(data$event==0)
@@ -295,45 +256,45 @@ fhcmodel <- function(data, event_time, event_status, id, beta_variable, gamma_va
       pos <- cen[cen<death[1]]
       data$base_cdf[pos] <- 0
     }
-    # check ending
-    if (sum(cen>death[length(death)])!=0){
-      pos <- cen[cen>death[length(death)]]
-      data$base_cdf[pos] <- base_cdf[length(base_cdf)]
-    }
     data$base_cdf <- na.locf(data$base_cdf)
-
 
     ## first iteration
     iteration <- 1
     # Step 2 gamma and beta_0
-    gamma_k1 <- gamma_comp(par=rep(0,length(gamma_variable)),beta=beta,beta0=beta_0,lower=-10,upper=10)
-    beta_0_k1 <- beta0_comp(gamma = gamma_k1,beta = beta)
+    beta_gamma_k1 <- beta_gamma_comp(par=c(beta,rep(0,length(Z_var))),beta0=beta_0)
+    beta_k1 <- beta_gamma_k1[[1]]
+    gamma_k1 <- beta_gamma_k1[[2]]
+    beta_0_k1 <- beta0_comp(beta = beta_k1,gamma = gamma_k1)
 
-    # Step 3 beta
-    beta_k1 <- cox_weighted(ini_covari=beta,gamma=gamma_k1)
-
-    # Step 4 baseline CDF
+    # Step 3 baseline CDF
     base_f_0 <- f_est(gamma=as.vector(gamma_k1),beta=beta_k1,beta0=beta_0_k1)
     base_cdf_k1 <- base_f_0[[1]]
     data <- base_f_0[[2]]
 
     cat("Iteration 1 is done.", "\n")
 
+    # print(beta_0_k1)
+    # print(beta_k1)
+    # print(gamma_k1)
+
     # second iteration
     iteration <- 2
     # step 2
-    gamma_k2 <- gamma_comp(par=gamma_k1,beta=beta_k1,beta0=beta_0_k1,lower=gamma_k1-2,upper=gamma_k1+2)
-    beta_0_k2 <- beta0_comp(gamma = gamma_k2,beta = beta_k1)
+    beta_gamma_k2 <- beta_gamma_comp(par=c(beta_k1,gamma_k1),beta0=beta_0_k1)
+    beta_k2 <- beta_gamma_k2[[1]]
+    gamma_k2 <- beta_gamma_k2[[2]]
+    beta_0_k2 <- beta0_comp(beta = beta_k2,gamma = gamma_k2)
 
-    # Step 3 beta
-    beta_k2 <- cox_weighted(ini_covari=beta_k1,gamma=gamma_k2)
-
-    # Step 4 baseline CDF
+    # Step 3 baseline CDF
     base_f_0 <- f_est(gamma=as.vector(gamma_k2),beta=beta_k2,beta0=beta_0_k2)
     base_cdf_k2 <- base_f_0[[1]]
     data <- base_f_0[[2]]
 
     cat("Iteration 2 is done.", "\n")
+
+    # print(beta_0_k2)
+    # print(beta_k2)
+    # print(gamma_k2)
 
     ## Keep doing iterations until convergence
     beta_diff <- min(c(sum(abs((beta_k2-beta_k1)/beta_k1) > relconverge.par),sum((abs(beta_k2-beta_k1) > absconverge.par))))
@@ -347,7 +308,7 @@ fhcmodel <- function(data, event_time, event_status, id, beta_variable, gamma_va
       deter <- ( beta_diff !=0 | beta_0_diff !=0 | base_cdf_diff !=0)
     }
 
-    while( deter & iteration < max.int){
+    while( deter & iteration <= max.int){
 
       iteration  <- iteration + 1
       beta_k1 <- beta_k2
@@ -356,13 +317,12 @@ fhcmodel <- function(data, event_time, event_status, id, beta_variable, gamma_va
       base_cdf_k1 <- base_cdf_k2
 
       # step 2
-      gamma_k2 <- gamma_comp(par=gamma_k1,beta=beta_k1,beta0=beta_0_k1,lower=gamma_k1-2,upper=gamma_k1+2)
-      beta_0_k2 <- beta0_comp(gamma = gamma_k2,beta = beta_k1)
+      beta_gamma_k2 <- beta_gamma_comp(par=c(beta_k1,gamma_k1),beta0=beta_0_k1)
+      beta_k2 <- beta_gamma_k2[[1]]
+      gamma_k2 <- beta_gamma_k2[[2]]
+      beta_0_k2 <- beta0_comp(beta = beta_k2,gamma = gamma_k2)
 
-      # Step 3 beta
-      beta_k2 <- cox_weighted(ini_covari=beta_k1,gamma=gamma_k2)
-
-      # Step 4 baseline CDF
+      # Step 3 baseline CDF
       base_f_0 <- f_est(gamma=gamma_k2,beta=beta_k2,beta0=beta_0_k2)
       base_cdf_k2 <- base_f_0[[1]]
       data <- base_f_0[[2]]
@@ -388,16 +348,17 @@ fhcmodel <- function(data, event_time, event_status, id, beta_variable, gamma_va
     }
 
     if (!is.null(gamma_variable)){
-      result.coef <- matrix(c(beta_0_k2,beta_k2,gamma_k2,iteration,base_f_0[[3]]),nrow=1)
-      colnames(result.coef) <- c("intercept",paste0("beta_",beta_variable),paste0("gamma_",gamma_variable),"num.iter","Lagrange_multiplier")
+      result.coef <- matrix(c(beta_0_k2,beta_k2,gamma_k2,iteration),nrow=1)
+      colnames(result.coef) <- c("intercept",paste0("beta_",beta_variable),paste0("gamma_",gamma_variable),"num.iter")
     }else{
-      result.coef <- matrix(c(beta_0_k2,beta_k2,iteration,base_f_0[[3]]),nrow=1)
-      colnames(result.coef) <- c("intercept",paste0("beta_",beta_variable),"num.iter","Lagrange_multiplier")
+      result.coef <- matrix(c(beta_0_k2,beta_k2,iteration),nrow=1)
+      colnames(result.coef) <- c("intercept",paste0("beta_",beta_variable),"num.iter")
     }
 
     data <- data[order(data[,id]),]
+    data <- subset(data, select = -p_weight )
     colnames(data)[colnames(data)=="event"] <- event_status
-    colnames(data)[colnames(data)=="T_event"] <- event_time
+    colnames(data)[colnames(data)=="T_new"] <- event_time
 
     return(list(coef=result.coef,data=data))
 
@@ -410,8 +371,8 @@ fhcmodel <- function(data, event_time, event_status, id, beta_variable, gamma_va
     para_coef <- result.coef$coef[1:(1+length(beta_variable)+length(gamma_variable))]
     names(para_coef) <- colnames(result.coef$coef)[1:(1+length(beta_variable)+length(gamma_variable))]
     iter <- result.coef$coef[2+length(beta_variable)+length(gamma_variable)]
-    lag_multi <- result.coef$coef[length(result.coef$coef)]
-    data <- result.coef$data
+    # lag_multi <- result.coef$coef[length(result.coef$coef)]
+    data_final <- result.coef$data
   }
 
   # standard deviation
@@ -426,6 +387,7 @@ fhcmodel <- function(data, event_time, event_status, id, beta_variable, gamma_va
     registerDoParallel(cl)
     cat("Standard error estimation starts.Please be patient.","\n")
     result.pert <- foreach(i=icount(k),.packages =c("survival","maxLik","zoo"),.combine=rbind,.errorhandling = "remove") %dopar% {
+      #write(paste("Starting perturbation run",i,"\n"),file="log.txt",append=TRUE)
       set.seed(seeds_pert[i])
       data$p_weight <- rexp(n,rate=1)
       one_run <- point_est(data,pert=TRUE)
@@ -443,9 +405,9 @@ fhcmodel <- function(data, event_time, event_status, id, beta_variable, gamma_va
   }
 
   if (coef==T & se==T){
-    result <- list(coef=para_coef,se=para_se,iter=iter,lag_multi=lag_multi,data=data)
+    result <- list(coef=para_coef,iter=iter,se=para_se,perturb=result.pert,data=data_final)
   } else if(coef==T & se==F){
-    result <- list(coef=para_coef,iter=iter,lag_multi=lag_multi,data=data)
+    result <- list(coef=para_coef,iter=iter,data=data_final)
   } else if (coef==F & se==T){
     result <- list(se=para_se,perturb=result.pert)
   }

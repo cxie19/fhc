@@ -371,7 +371,6 @@ fhcmodel <- function(data, event_time, event_status, id, beta_variable, gamma_va
     para_coef <- result.coef$coef[1:(1+length(beta_variable)+length(gamma_variable))]
     names(para_coef) <- colnames(result.coef$coef)[1:(1+length(beta_variable)+length(gamma_variable))]
     iter <- result.coef$coef[2+length(beta_variable)+length(gamma_variable)]
-    # lag_multi <- result.coef$coef[length(result.coef$coef)]
     data_final <- result.coef$data
   }
 

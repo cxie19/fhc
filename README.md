@@ -18,22 +18,30 @@ settings with a cure potential. <br />
 
 Under a PHC model, the survival function of time $T$ conditional on a
 vector of covariates $\boldsymbol{z}$ can be expressed as 
+
 $$
  S(t|\boldsymbol{z})=\exp\left[-e^{\beta_0}e^{\boldsymbol{z'\beta}}\{F_0(t)\}\right],
 $$ 
-where $\beta_0$ is an unknown scalar; $\boldsymbol{\beta}$ is a
-vector of unknown regression coefficients; and $F_0(t)$ is a
-standardized baseline cumulative hazard function with the following
+
+where $\beta_0$ is an unknown scalar; 
+$\boldsymbol{\beta}$ is a
+vector of unknown regression coefficients; 
+and $F_0(t)$ is a standardized baseline cumulative hazard function with the following
 properties: (1) it is monotone increasing with $F_0(0)=0$ and
 $\lim_{t \to \infty}F_0(t)=1$; (2) it can be considered as the
 cumulative hazard function when all the covariates are equal to 0.<br />
 
 The survival function of an FHC model at time $T$ conditional on 
-covariate vectors $\boldsymbol{x}$ and $\boldsymbol{z}$ is expressed as 
+covariate vectors 
+$\boldsymbol{x}$ and $\boldsymbol{z}$ is expressed as 
+
 $$
 S(t|\boldsymbol{x},\boldsymbol{z})=\exp\left[-e^{\beta_0}e^{\boldsymbol{z'\beta}}\{F_0(t)\}^{\exp\{\boldsymbol{x'\gamma}\}}\right],
 $$ 
-where $\boldsymbol{\beta}$ and $\boldsymbol{\gamma}$ are unknown
+
+where $\boldsymbol{\beta}$ 
+and $\boldsymbol{\gamma}$ 
+are unknown
 regression coefficients with dimensions $p$ and $q$, respectively.
 $\boldsymbol{x}$ and $\boldsymbol{z}$ are regarded as short- and
 long-term covariates, respectively.

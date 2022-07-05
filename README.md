@@ -2,7 +2,7 @@
 fhc is an R package to fit a flexible-hazards cure (FHC) model and a
 proportional hazards cure (PHC) model for right-censored survival data
 with a cure fraction. The cure fraction can be detected by the stable
-plateaus of Kaplan-Meier curves' right tails. Besides fitting the FHC or
+plateau of the overall Kaplan-Meier curve's right tail. Besides fitting an FHC or
 PHC model, we can also use this package to estimate a cure rate and a
 survival function for a group of patients with specified characteristics
 based on the fitted model. <br />
@@ -20,7 +20,7 @@ Under a PHC model, the survival function of time $T$ conditional on a
 vector of covariates $\boldsymbol{z}$ can be expressed as 
 
 $$
- S(t|\boldsymbol{z})=\exp\left[-e^{\beta_0}e^{\boldsymbol{z'\beta}}\{F_0(t)\}\right],
+ S(t|\boldsymbol{z})=\exp\left\\{-e^{\beta_0}e^{\boldsymbol{z'\beta}}F_0(t)\right\\},
 $$ 
 
 where $\beta_0$ is an unknown scalar; 
@@ -36,7 +36,7 @@ covariate vectors
 $\boldsymbol{x}$ and $\boldsymbol{z}$ is expressed as 
 
 $$
-S(t|\boldsymbol{x},\boldsymbol{z})=\exp\left[-e^{\beta_0}e^{\boldsymbol{z'\beta}}\{F_0(t)\}^{\exp\{\boldsymbol{x'\gamma}\}}\right],
+S(t|\boldsymbol{x},\boldsymbol{z})=\exp\left[-e^{\beta_0}e^{\boldsymbol{z'\beta}}\\{F_0(t)\\}^{\exp(\boldsymbol{x'\gamma})}\right],
 $$ 
 
 where $\boldsymbol{\beta}$ 
@@ -88,13 +88,13 @@ following command.
 help(estsurvival)
 ```
 
-## Simple examples
+## Examples
 
 ### Example of fitting an FHC model
 
 For example, we want to fit an FHC model with covariates age and sex as
-both short- and long-term covariates. We call the function *fhcmodel*
-and the following command can be used.
+both short- and long-term covariates. We call the function *fhcmodel*,
+and the following command is used.
 
 ```{r}
 result <- fhcmodel(data=fhc_dat,event_status = "event",event_time="time",id="id",beta_variable = c("age","sex"), gamma_variable = c("age","sex"),se=F)
@@ -102,7 +102,7 @@ result <- fhcmodel(data=fhc_dat,event_status = "event",event_time="time",id="id"
 
 After fitting the model, we can compute the cure rates for males and
 females given the overall mean of the covariate age. We call the function
-*estcure*, and the following commands can be used.
+*estcure*, and the following commands are used.
 
 ```{r}
 estcure(object=result,z_value=c(mean(fhc_dat$age),0)) # male

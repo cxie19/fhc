@@ -1,8 +1,5 @@
 ---
 title: "fhc"
-editor_options: 
-  markdown: 
-    wrap: 72
 ---
 
 fhc is an R package to fit a flexible-hazards cure (FHC) model and a

@@ -9,7 +9,7 @@
 #' @export
 #'
 #' @examples
-#' result <- fhcmodel(data=fhc_dat,event_status = "event",event_time="time",beta_variable = c("age","sex"),gamma_variable = c("age","sex"),se=F)
+#' result <- fhcmodel(data=fhc_dat,event_status = "event",event_time="time",id="id",beta_variable = c("age","sex"),gamma_variable = c("age","sex"),se=F)
 #' survival_female <- estsurvival(object=result,z_value=c(mean(fhc_dat$age),1),x_value=c(mean(fhc_dat$age),1),event_time="time")
 #' survival_male <- estsurvival(object=result,z_value=c(mean(fhc_dat$age),0),x_value=c(mean(fhc_dat$age),0),event_time="time")
 #' plot(survival_male$time,survival_male$survival,ylim=c(0,1),xlim=c(0,40),xlab="Time",ylab="Survival probability",type="l",col="red")

@@ -63,7 +63,7 @@ The item std.err and perturb are returned when the argument se=TRUE.
 \item{iter}{the number of iterations used to complete the point estimation if coef=TRUE}
 \item{data}{the final data including the estimated \eqn{F_0(t)} and \eqn{f_0(t)} if coef=TRUE}
 \item{std.err}{standard errors of regression paramters if se=TRUE}
-\item{perturb}{a matrix containing the perturbation estimates, whose number of rows is se.pert if se=TRUE}
+\item{perturb}{a matrix containing the perturbation estimates, whose number of rows is se.pert, if se=TRUE}
 }
 \description{
 Fits a flexible-hazards cure model. Tied failure times are dealt with Breslow approximation.

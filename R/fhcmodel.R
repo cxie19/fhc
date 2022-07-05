@@ -389,7 +389,7 @@ fhcmodel <- function(data, event_time, event_status, id, beta_variable, gamma_va
     cl <- makeCluster(no_cores)
     registerDoParallel(cl)
     cat("Standard error estimation starts.Please be patient.","\n")
-    result.pert <- foreach(i=icount(k),.packages =c("survival","maxLik","zoo"),.combine=rbind,.errorhandling = "remove") %dopar% {
+    result.pert <- foreach(i=seq(k),.packages =c("survival","maxLik","zoo"),.combine=rbind,.errorhandling = "remove") %dopar% {
       #write(paste("Starting perturbation run",i,"\n"),file="log.txt",append=TRUE)
       set.seed(seeds_pert[i])
       data$p_weight <- rexp(n,rate=1)

@@ -28,8 +28,8 @@ properties: (1) it is monotone increasing with $F_0(0)=0$ and
 $\lim_{t \to \infty}F_0(t)=1$; (2) it can be considered as the
 cumulative hazard function when all the covariates are equal to 0.<br />
 
-The survival function of an FHC model at time $T$ conditional on vectors
-of covariates $\boldsymbol{x}$ and $\boldsymbol{z}$ is expressed as 
+The survival function of an FHC model at time $T$ conditional on 
+covariate vectors $\boldsymbol{x}$ and $\boldsymbol{z}$ is expressed as 
 $$
 S(t|\boldsymbol{x},\boldsymbol{z})=\exp\left[-e^{\beta_0}e^{\boldsymbol{z'\beta}}\{F_0(t)\}^{\exp\{\boldsymbol{x'\gamma}\}}\right],
 $$ 

@@ -10,7 +10,7 @@ fhcmodel(
   event_status,
   id,
   beta_variable,
-  gamma_variable,
+  gamma_variable = NULL,
   coef = T,
   se = T,
   max.int = 200,
@@ -34,7 +34,7 @@ The categorical variables with more than 2 levels need to be converted into dumm
 
 \item{beta_variable}{the name(s) of variable(s) defined as long-term covariate(s) in the model, which cannot be NULL.}
 
-\item{gamma_variable}{the name(s) of variable(s) defined as short-term covariate(s) in the model.
+\item{gamma_variable}{the name(s) of variable(s) defined as short-term covariate(s) in the model. By default gamma_variable = NULL.
 If there is no short-term covariate that needs to be defined, gamma should be set as NULL and the model becomes a proportional hazards cure model.}
 
 \item{coef}{a logical option for obtaining point estimates of regression parameters. By default coef = TRUE.}
@@ -57,7 +57,7 @@ If it is TRUE, the program returns standard error by perturbation method. If it 
 \item{relconverge.F0t}{the average of relative differences for \eqn{F_0(t)} as the convergence criteria. The default is 1e-3.}
 }
 \value{
-a list containing results of the fit. The following items para_coef, iter, lag_multi, and data are returned when the argument coef=TRUE.
+a list containing results of the fit. The following items para_coef, iter, and data are returned when the argument coef=TRUE.
 The item para_se is returned when the argument se=TRUE.
 \item{para_coef}{estimated regression parameters (beta and gamma)}
 \item{iter}{the number of iterations used to complete the point estimation}
@@ -70,6 +70,6 @@ Fits a flexible-hazards cure model. Tied failure times are dealt with Breslow ap
 \examples{
 data(fhc_dat)
 result <- fhcmodel(data=fhc_dat,event_status = "event",event_time="time",id="id",beta_variable = c("age","sex"),gamma_variable = c("age","sex"),se=F)
-result <- fhcmodel(data=fhc_dat,event_status = "event",event_time="time",id="id",beta_variable = c("age","sex"),gamma_variable = NULL,se=T)
+result <- fhcmodel(data=fhc_dat,event_status = "event",event_time="time",id="id",beta_variable = c("age","sex"),se=T)
 result$coef
 }

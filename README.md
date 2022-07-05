@@ -52,7 +52,7 @@ Install the R package using the following commands on the R console:
 
 ```{r}
 install.packages("devtools")
-devtools::install_github("cxie1/fhc")
+devtools::install_github("cxie19/fhc")
 library(fhc)
 ```
 

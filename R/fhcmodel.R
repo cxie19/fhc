@@ -19,21 +19,24 @@
 #' @param absconverge.F0t the average of absolute differences for \eqn{F_0(t)} as the convergence criteria. The default is 1e-6.
 #' @param relconverge.F0t the average of relative differences for \eqn{F_0(t)} as the convergence criteria. The default is 1e-3.
 #'
-#' @return a list containing results of the fit. The following items para_coef, iter, and data are returned when the argument coef=TRUE.
-#' The item para_se is returned when the argument se=TRUE.
-#'     \item{para_coef}{estimated regression parameters (beta and gamma)}
-#'     \item{iter}{the number of iterations used to complete the point estimation}
-#'     \item{data}{the final data including the estimated \eqn{F_0(t)} and \eqn{f_0(t)}}
-#'     \item{para_se}{standard errors of regression paramters}
+#' @return a list containing results of the fit. The following items coef, iter, and data are returned when the argument coef=TRUE.
+#' The item std.err and perturb are returned when the argument se=TRUE.
+#'     \item{coef}{estimated regression parameters (beta and gamma) if coef=TRUE}
+#'     \item{iter}{the number of iterations used to complete the point estimation if coef=TRUE}
+#'     \item{data}{the final data including the estimated \eqn{F_0(t)} and \eqn{f_0(t)} if coef=TRUE}
+#'     \item{std.err}{standard errors of regression paramters if se=TRUE}
+#'     \item{perturb}{a matrix containing the perturbation estimates, whose number of rows is se.pert, if se=TRUE}
 #' @export
 #'
 #' @examples data(fhc_dat)
 #' result <- fhcmodel(data=fhc_dat,event_status = "event",event_time="time",id="id",beta_variable = c("age","sex"),gamma_variable = c("age","sex"),se=F)
 #' result <- fhcmodel(data=fhc_dat,event_status = "event",event_time="time",id="id",beta_variable = c("age","sex"),se=T)
 #' result$coef
-#' @import doParallel
-#' @importFrom maxLik maxNR
+#' @import foreach
+#' @import parallel
 #' @import survival
+#' @importFrom maxLik maxNR
+
 #' @importFrom zoo na.locf
 
 fhcmodel <- function(data, event_time, event_status, id, beta_variable, gamma_variable=NULL, coef=T, se=T, max.int=200,
@@ -404,11 +407,11 @@ fhcmodel <- function(data, event_time, event_status, id, beta_variable, gamma_va
   }
 
   if (coef==T & se==T){
-    result <- list(coef=para_coef,iter=iter,se=para_se,perturb=result.pert,data=data_final)
+    result <- list(coef=para_coef,iter=iter,std.err=para_se,perturb=result.pert,data=data_final)
   } else if(coef==T & se==F){
     result <- list(coef=para_coef,iter=iter,data=data_final)
   } else if (coef==F & se==T){
-    result <- list(se=para_se,perturb=result.pert)
+    result <- list(std.err=para_se,perturb=result.pert)
   }
 
   return(result)

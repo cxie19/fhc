@@ -8,7 +8,7 @@ Authors@R: c(
     person("Ruosha", "Li", email = "ruosha.li@uth.tmc.edu", role = "aut"))
 Description: A flexible-hazards cure model (non-mixture cure model) with the property of handling 
     non-proportional hazards structure of one or more variables in a survival-
-	  cure data set can be esaily estimated by appling the function. Cure rates 
+	  cure data set can be esaily estimated by applying the function. Cure rates 
 	  and estimated survival curves can be obtained as well.
 License: GPL (>= 3)
 Encoding: UTF-8

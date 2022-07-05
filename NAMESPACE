@@ -3,6 +3,7 @@
 export(estcure)
 export(estsurvival)
 export(fhcmodel)
+import(doParallel)
 import(foreach)
 import(parallel)
 import(survival)

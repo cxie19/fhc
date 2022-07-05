@@ -1,7 +1,4 @@
----
-title: "fhc"
----
-
+# fhc
 fhc is an R package to fit a flexible-hazards cure (FHC) model and a
 proportional hazards cure (PHC) model for right-censored survival data
 with a cure fraction. The cure fraction can be detected by the stable
@@ -10,7 +7,7 @@ PHC model, we can also use this package to estimate a cure rate and a
 survival function for a group of patients with specified characteristics
 based on the fitted model. <br />
 
-### What is an FHC model
+## What is an FHC model
 
 Our proposed FHC model is in the form of the promotion time cure model
 and an extension of the PHC model. It can simultaneously incorporate PH
@@ -37,7 +34,7 @@ regression coefficients with dimensions $p$ and $q$, respectively.
 $\boldsymbol{x}$ and $\boldsymbol{z}$ are regarded as short- and
 long-term covariates, respectively.
 
-### How to get started
+## How to get started
 
 Install the R package using the following commands on the R console:
 
@@ -79,9 +76,9 @@ following command.
 help(estsurvival)
 ```
 
-### Simple examples
+## Simple examples
 
-#### Example of fitting an FHC model
+### Example of fitting an FHC model
 
 For example, we want to fit an FHC model with covariates age and sex as
 both short- and long-term covariates. We call the function *fhcmodel*
@@ -115,7 +112,7 @@ legend(25,1,c("Male","Female"),cex=1,lty=c(1,1),col=c("red","blue"),horiz=F,bty=
 
 ![](example_plot.png)
 
-#### Example of fitting a PHC model
+### Example of fitting a PHC model
 
 Similarly, we can fit a PHC model, which can be considered as an FHC
 model without $\boldsymbol{\gamma}$ or short-term regression parameters.

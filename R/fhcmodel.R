@@ -36,8 +36,6 @@
 #' @import foreach
 #' @import parallel
 #' @import survival
-#' @importFrom maxLik maxNR
-
 #' @importFrom zoo na.locf
 
 fhcmodel <- function(data, event_time, event_status, id, beta_variable, gamma_variable=NULL, coef=T, se=T, max.int=200,

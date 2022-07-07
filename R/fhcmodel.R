@@ -33,6 +33,7 @@
 #' result <- fhcmodel(data=fhc_dat,event_status = "event",event_time="time",id="id",beta_variable = c("age","sex"),se=T)
 #' result$coef
 #' @import doSNOW
+#' @import foreach
 #' @import parallel
 #' @import survival
 #' @importFrom zoo na.locf

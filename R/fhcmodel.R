@@ -29,8 +29,10 @@
 #' @export
 #'
 #' @examples data(fhc_dat)
-#' result <- fhcmodel(data=fhc_dat,event_status = "event",event_time="time",id="id",beta_variable = c("age","sex"),gamma_variable = c("age","sex"),se=F)
-#' result <- fhcmodel(data=fhc_dat,event_status = "event",event_time="time",id="id",beta_variable = c("age","sex"),se=T)
+#' result <- fhcmodel(data=fhc_dat,event_status = "event",event_time="time",id="id",
+#'                    beta_variable = c("age","sex"),gamma_variable = c("age","sex"),se=F)
+#' result <- fhcmodel(data=fhc_dat,event_status = "event",event_time="time",id="id",
+#'                    beta_variable = c("age","sex"),se=T)
 #' result$coef
 #' @import doSNOW
 #' @import foreach

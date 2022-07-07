@@ -97,7 +97,8 @@ both short- and long-term covariates. We call the function *fhcmodel*,
 and the following command is used.
 
 ```{r}
-result <- fhcmodel(data=fhc_dat,event_status = "event",event_time="time",id="id",beta_variable = c("age","sex"), gamma_variable = c("age","sex"),se=F)
+result <- fhcmodel(data=fhc_dat,event_status = "event",event_time="time",id="id",beta_variable = c("age","sex"), 
+                   gamma_variable = c("age","sex"),se=F)
 ```
 
 After fitting the model, we can compute the cure rates for males and

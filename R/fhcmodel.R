@@ -32,8 +32,7 @@
 #' result <- fhcmodel(data=fhc_dat,event_status = "event",event_time="time",id="id",beta_variable = c("age","sex"),gamma_variable = c("age","sex"),se=F)
 #' result <- fhcmodel(data=fhc_dat,event_status = "event",event_time="time",id="id",beta_variable = c("age","sex"),se=T)
 #' result$coef
-#' @import doParallel
-#' @import foreach
+#' @import doSNOW
 #' @import parallel
 #' @import survival
 #' @importFrom zoo na.locf
@@ -42,13 +41,9 @@ fhcmodel <- function(data, event_time, event_status, id, beta_variable, gamma_va
                      se.pert=100, no_cores=7,
                      absconverge.par=1e-6, relconverge.par=1e-4, absconverge.F0t=1e-6, relconverge.F0t=1e-3){
 
-  cat("Program is running. Please be patient.","\n")
-
   n <- nrow(data)
 
   point_est <- function(data,pert){
-
-    cat("Point estimation starts.","\n")
 
     colnames(data)[colnames(data)==event_status] <- "event"
     colnames(data)[colnames(data)==event_time] <- "T_new"
@@ -273,8 +268,6 @@ fhcmodel <- function(data, event_time, event_status, id, beta_variable, gamma_va
     base_cdf_k1 <- base_f_0[[1]]
     data <- base_f_0[[2]]
 
-    cat("Iteration 1 is done.", "\n")
-
     # print(beta_0_k1)
     # print(beta_k1)
     # print(gamma_k1)
@@ -291,8 +284,6 @@ fhcmodel <- function(data, event_time, event_status, id, beta_variable, gamma_va
     base_f_0 <- f_est(gamma=as.vector(gamma_k2),beta=beta_k2,beta0=beta_0_k2)
     base_cdf_k2 <- base_f_0[[1]]
     data <- base_f_0[[2]]
-
-    cat("Iteration 2 is done.", "\n")
 
     # print(beta_0_k2)
     # print(beta_k2)
@@ -328,8 +319,6 @@ fhcmodel <- function(data, event_time, event_status, id, beta_variable, gamma_va
       base_f_0 <- f_est(gamma=gamma_k2,beta=beta_k2,beta0=beta_0_k2)
       base_cdf_k2 <- base_f_0[[1]]
       data <- base_f_0[[2]]
-
-      cat("Iteration", iteration, "is done.", "\n")
 
       # print(iteration)
       # print(beta_0_k2)
@@ -374,6 +363,8 @@ fhcmodel <- function(data, event_time, event_status, id, beta_variable, gamma_va
     names(para_coef) <- colnames(result.coef$coef)[1:(1+length(beta_variable)+length(gamma_variable))]
     iter <- result.coef$coef[2+length(beta_variable)+length(gamma_variable)]
     data_final <- result.coef$data
+
+    cat("Point estimation is done.","\n")
   }
 
   # standard deviation
@@ -383,16 +374,21 @@ fhcmodel <- function(data, event_time, event_status, id, beta_variable, gamma_va
     seeds_pert <- round(runif(se.pert)*10^3)
     k <- length(seeds_pert)
 
-    no_cores <- no_cores
-    cl <- makeCluster(no_cores)
-    registerDoParallel(cl)
-    cat("Standard error estimation starts.Please be patient.","\n")
-    result.pert <- foreach(i=seq(k),.packages =c("survival","maxLik","zoo"),.combine=rbind,.errorhandling = "remove") %dopar% {
-      #write(paste("Starting perturbation run",i,"\n"),file="log.txt",append=TRUE)
+    cl <- makeSOCKcluster(no_cores)
+    registerDoSNOW(cl)
+
+    pb <- txtProgressBar(min=1, max=k, style=3)
+    progress <- function(n) setTxtProgressBar(pb, n)
+    opts <- list(progress=progress)
+
+    cat("Standard error estimation starts.","\n")
+    result.pert <- foreach(i=seq(k),.packages =c("survival","zoo"),.combine=rbind,
+                           .errorhandling = "remove",.options.snow=opts) %dopar% {
       set.seed(seeds_pert[i])
       data$p_weight <- rexp(n,rate=1)
       one_run <- point_est(data,pert=TRUE)
       one_run$coef[1:(1+length(beta_variable)+length(gamma_variable))]}
+    close(pb)
     stopCluster(cl)
 
     para_se <- apply(result.pert,2,sd)

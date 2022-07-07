@@ -374,7 +374,7 @@ fhcmodel <- function(data, event_time, event_status, id, beta_variable, gamma_va
     seeds_pert <- round(runif(se.pert)*10^3)
     k <- length(seeds_pert)
 
-    cl <- makeSOCKcluster(no_cores)
+    cl <- makeCluster(no_cores)
     registerDoSNOW(cl)
 
     pb <- txtProgressBar(min=1, max=k, style=3)

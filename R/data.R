@@ -7,7 +7,7 @@
 #' \describe{
 #'     \item{id}{patient id}
 #'     \item{age}{a continuous variable, which is centered to the mean}
-#'     \item{sex}{a binary variable with 0 for male, 1 for female}
+#'     \item{sex}{a binary variable with 0 for male and 1 for female}
 #'     \item{time}{observed survival time}
 #'     \item{event}{an event indicator with 1 for dead and 0 for censored}
 #'     }

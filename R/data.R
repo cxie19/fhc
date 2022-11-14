@@ -5,7 +5,7 @@
 #'
 #'@format A data frame with 500 observations on the following 5 variables.
 #' \describe{
-#'     \item{id}{patint id}
+#'     \item{id}{patient id}
 #'     \item{age}{a continuous variable, which is centered to the mean}
 #'     \item{sex}{a binary variable with 0 for male, 1 for female}
 #'     \item{time}{observed survival time}

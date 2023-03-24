@@ -7,6 +7,9 @@ PHC model, we can also use this package to estimate a cure rate and a
 survival function for a group of patients with specified characteristics
 based on the fitted model. <br />
 
+The corresponding methodology paper is 
+Xie, C., Huang, X., Li, R., & Pisters, P. W. T. (2022). A flexible-hazards cure model with application to patients with soft tissue sarcoma. Statistics in Medicine, 41(29), 5698–5714. https://doi.org/10.1002/sim.9588
+
 ## What is an FHC model
 
 Our proposed FHC model is in the form of the promotion time cure model

@@ -22,8 +22,12 @@
 
 estsurvival <- function(object,z_value,x_value,event_time){
   coef <- object$coef
-  data <- object$data
+  data <- as.data.frame(object$data)
   F_0t <- data$base_cdf[order(data[,event_time])]
-  est <- exp(-as.vector(exp(coef[1]+coef[2:(1+length(z_value))]%*%z_value))*F_0t^as.vector(exp(coef[(length(coef)-length(x_value)+1):length(coef)]%*%x_value)))
+  if (!is.null(x_value)){
+    est <- exp(-as.vector(exp(coef[1]+coef[2:(1+length(z_value))]%*%z_value))*F_0t^as.vector(exp(coef[(length(coef)-length(x_value)+1):length(coef)]%*%x_value)))
+  }else{
+    est <- exp(-as.vector(exp(coef[1]+coef[2:(1+length(z_value))]%*%z_value))*F_0t)
+  }
   return(data.frame(time=sort(data[,event_time]),survival=est))
 }

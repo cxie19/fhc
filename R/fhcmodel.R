@@ -95,7 +95,7 @@ fhcmodel <- function(data, event_time, event_status, id, beta_variable, gamma_va
         if (!is.null(gamma_variable)){
           gamma <- beta_gamma_k[(length(beta_variable)+1):(length(beta_variable)+length(gamma_variable))]
         } else {
-          gamma <- rep(0,length(Z_var))
+          gamma <- rep(0,length(X_var))
         }
       } else{
         if(pert==F){
@@ -261,7 +261,7 @@ fhcmodel <- function(data, event_time, event_status, id, beta_variable, gamma_va
     ## first iteration
     iteration <- 1
     # Step 2 gamma and beta_0
-    beta_gamma_k1 <- beta_gamma_comp(par=c(beta,rep(0,length(Z_var))),beta0=beta_0)
+    beta_gamma_k1 <- beta_gamma_comp(par=c(beta,rep(0,length(X_var))),beta0=beta_0)
     beta_k1 <- beta_gamma_k1[[1]]
     gamma_k1 <- beta_gamma_k1[[2]]
     beta_0_k1 <- beta0_comp(beta = beta_k1,gamma = gamma_k1)
